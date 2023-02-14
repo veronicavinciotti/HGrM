@@ -9,3 +9,7 @@ checkRegionCPP <- function(x, y) {
     .Call('_HGrM_checkRegionCPP', PACKAGE = 'HGrM', x, y)
 }
 
+timesTwo <- function(x) {
+    .Call('_HGrM_timesTwo', PACKAGE = 'HGrM', x)
+}
+

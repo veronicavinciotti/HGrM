@@ -34,10 +34,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// timesTwo
+NumericVector timesTwo(NumericVector x);
+RcppExport SEXP _HGrM_timesTwo(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_HGrM_getRegionCPP", (DL_FUNC) &_HGrM_getRegionCPP, 2},
     {"_HGrM_checkRegionCPP", (DL_FUNC) &_HGrM_checkRegionCPP, 2},
+    {"_HGrM_timesTwo", (DL_FUNC) &_HGrM_timesTwo, 1},
     {NULL, NULL, 0}
 };
 
