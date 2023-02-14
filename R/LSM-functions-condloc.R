@@ -1,10 +1,3 @@
-# Bayesian inference functions
-library(truncnorm)
-library(mvtnorm)
-library(tmvtnorm)
-library(BDgraph)
-library(huge)
-library(Matrix)
 
 Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=500)
   {
@@ -79,25 +72,6 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
       alpha.save[,k-n.burnin]<-alpha
       if(!is.null(Z))
         beta.save[,k-n.burnin]<-beta
-      # calculate graph probability
-  #    log.graph.prob<-0
-  #    for (b in 1:B){
-  #      for (i in 2:p){
-  #        for (j in 1:(i-1)){
-  #          ind<-e1==j & e2==i
-  #          if(!is.null(Z))
-  #            edge.prob<-pnorm(alpha[b]+dist.cond[ind,b]+Z[ind,]%*%beta)
-  #          else
-  #            edge.prob<-pnorm(alpha[b]+dist.cond[ind,b])
-  #          if (G[ind,b]==0){
-  #            log.graph.prob<-log.graph.prob+log(1-edge.prob)
-  #          } else {
-  #            log.graph.prob<-log.graph.prob+log(edge.prob)
-  #          }
-  #        }
-  #      }
-  #    }
-  #    log.graph.prob.save[k-n.burnin]<-log.graph.prob
     }
   }
   if(is.null(Z))
