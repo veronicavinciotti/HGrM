@@ -6,10 +6,11 @@ Authors@R: c(person("Francisco","Richter", email = "richtf@usi.ch", role = c("au
                 person("Veronica","Vinciotti", email = "veronica.vinciotti@unitn.it", role=c("ctb")),
                 person("Ernst","Wit", email = "ernst.jan.camiel.wit@usi.ch", role = c("ctb")))
 Description: Statistical algorithms for HGrM inference
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: file LICENSE
 Encoding: UTF-8
-Depends: R (>= 3.5.0), Rcpp
-LazyData: true
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+Depends: R (>= 3.5.0),
+         Rcpp
+LinkingTo: Rcpp
+SystemRequirements: C++14
+RoxygenNote: 7.2.1
+

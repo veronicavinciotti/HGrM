@@ -5,9 +5,14 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // getRegionCPP
 IntegerVector getRegionCPP(NumericVector x, NumericVector y);
-RcppExport SEXP _Pkg_getRegionCPP(SEXP xSEXP, SEXP ySEXP) {
+RcppExport SEXP _HGrM_getRegionCPP(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +24,7 @@ END_RCPP
 }
 // checkRegionCPP
 int checkRegionCPP(int x, int y);
-RcppExport SEXP _Pkg_checkRegionCPP(SEXP xSEXP, SEXP ySEXP) {
+RcppExport SEXP _HGrM_checkRegionCPP(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,12 +36,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_Pkg_getRegionCPP", (DL_FUNC) &_Pkg_getRegionCPP, 2},
-    {"_Pkg_checkRegionCPP", (DL_FUNC) &_Pkg_checkRegionCPP, 2},
+    {"_HGrM_getRegionCPP", (DL_FUNC) &_HGrM_getRegionCPP, 2},
+    {"_HGrM_checkRegionCPP", (DL_FUNC) &_HGrM_checkRegionCPP, 2},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_Pkg(DllInfo *dll) {
+RcppExport void R_init_HGrM(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
