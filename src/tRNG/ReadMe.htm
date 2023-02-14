@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>tRNG Library - ReadMe</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+body,td,th {
+	color: #CCCCCC;
+	font-family: Tahoma;
+	font-size: 12px;
+}
+body {
+	background-color: #000000;
+}
+.style2 {
+	font-size: 16px;
+	font-weight: bold;
+}
+.style4 {font-size: 12px}
+-->
+</style>
+</head>
+<body> 
+<div align="right"> 
+   <p><img src="tRNG.gif" width="200" height="94"><br> 
+      <span class="style2">tRNG Library Reference<br> 
+      <span class="style4">version 3 </span></span></p> 
+   <p align="left"><strong>Description</strong><br> 
+      tRNG is a random number generator designed to produce true random bits using
+         as a source of entropy the computer's soundcard. Its aim is to provide developers
+         a reliable way of producing random numbers on different hardware configurations.<br> 
+      Starting from January 18, 2005, its sources are freely available for non-commercial
+      use under the GPL license. </p>
+   <p align="left"><strong>Use</strong><br> 
+      Let's start with a simple example:<br> 
+      <br> 
+      <code>#include &lt;stdio.h&gt;<br>
+      #include "tRNG.h"<br> 
+      <br> 
+      int main() {<br> 
+      tRNG random(0,0,0);<br>
+      printf("%d", random.rand());<br> 
+      }</code><br> 
+      <br> 
+      This code prints on screen a random <strong>int</strong>. First of all, the
+      tRNG object is created (the three parameters will be discussed later), and
+   then the object's rand() functions is called to obtain an <strong>int</strong>.</p>
+   <p align="left"><strong>How it works</strong><br> 
+      The object has two buffers (called dispenser and generator). When rand() is
+         called, it checks if in dispenser is present unused random data. If yes,
+         it reads an <strong>int</strong> from dispenser and returns it; otherwise it checks and waits
+         for generator to be filled. As soon as generator is filled, its content
+         is moved to dispenser and a separated thread is created that re-fills generator
+         with random data. In this way if the amount of bytes requested per second
+         isn't too high, random data is always immediately available. </p>
+   <p align="left"><strong>Performance</strong><br>
+      The throughput of tRNG depends on a number of factors, including processing
+         power, sound card quality (cheap soundcards will likely produce more noise),
+         sound card capabilities (sampling rate, sampling depth, number of channels)
+         among others. On my computer (Athlon 64 3200+, Creative SB Live! 5.1) the
+         throughput is about 5000 bytes/sec for normal mode and about 1000 bytes/sec
+         for Disable Loop/Quality Control mode.</p>
+   <p align="left"><strong>Execption Handling</strong><br> 
+      tRNG has no exception handling mechanism, except the function Error()
+         that returns the current status of the object. When created, the object's
+         status is set to TRNG_NO_ERROR. If something goes wrong its value will be
+         changed according to the error. When the object's status isn't set to TRNG_NOT_ERROR,
+         all the functions will simply fail (the rand() function will always return
+         0).</p>
+   <p align="left"> <strong>Parameters</strong><br> 
+      Upon creation, three parameters can be passed to the object. The first one
+         specifies the internal buffers' size, the second one sets the number of
+         iterations. and the third one is a flag field enabling special features.
+         By default, the buffer size is 40000 and the number of iterations is 8.</p> 
+   <p align="left"><strong>Buffer Size</strong><br> 
+      When the object is created, the separated thread is immediately created. Nevertheless,
+         if rand() is called immediately after the object's creation, the function
+         won't return before the buffer is filled. Since the average throughput of
+         tRNG is 4500 bytes per sec, it means that it will take about two seconds
+         to fill the buffer (with the default buffer's size). Therefore if the rand()
+         function is invoked within two seconds from the object's creation, it will
+         hang for a while. If you raise this value, it will take more for the first
+         data to be ready. On the other side, if you need - let's say - 20000 bytes
+         all together, and the buffer's size is 10000, the function will likely hang
+         for a while the 2500th time it is called. <strong>This value must be divisible by
+         4.</strong> </p> 
+   <p align="left"><strong>Iterations</strong><br> 
+      This parameter tells tRNG (more or less) &quot;how many audio samples are needed
+      to obtain one random bit&quot;. By default its value is 4, and it should be
+      enough for most situations. Beware it greatly affects the throughput: if you
+      double it, the throughput will be around 2800 bytes per sec.</p> 
+   <p align="left"><strong>Flags</strong><br>
+      NOTE: THE FEATURES DESCRIBED HERE ARE NOT READY IN THE CURRENT RELEASE. THEY'RE
+      PRESENT ONLY FOR DOCUMENTATION AND TESTING. <strong></strong>      <br> 
+      This parameter can be used to enable special features like Quality Control,
+         Unbiasing, Additional Iterations, Turbo mode, Automatic mode.</p> 
+   <blockquote>
+      <p align="left"><strong>Quality Control</strong><br> 
+         Enabled by TRNG_ENABLE_QUALITY_CONTROL. When this is enabled, a few basic diagnostic
+            checks for non-randomness are made on the generated data. If Additional
+            Iterations isn't enabled and non-randomness is detected, it will set the
+            status to TRNG_NOT_ENOUGH_ENTROPY.</p>
+      <p align="left"><strong>Unbiasing</strong><br> 
+         Enabled by TRNG_ENABLE_UNBIASING. When enabled, it performs unbiasing on
+            the generated data. (not ready) </p>
+      <p align="left"><strong>Turbo mode</strong><br> 
+         Enabled by TRNG_ENABLE_FHSPRNG. In this mode multiple istances of a PRNG
+            are seeded with hardware-generated data. It can be used when big amount
+            of data are needed. (not ready) </p>
+      <p align="left"><strong>Automatic mode</strong><br> 
+         Enabled by TRNG_ENABLE_AUTOMATIC_MODE. This mode automatically switch between
+            normal and turbo mode according to the amount of data requested. When
+            enabled, the rand() function will never hang. (not ready) </p>
+      <p align="left"><strong>Disable loop counter<br>
+      </strong>Enabled by TRNG_DISABLE_LOOP_COUNT. Normally, when either the desired
+      number of iterations or quality level has been reached, the generator marks
+      the generator buffer as ready and exits. When this option is enabled, the generator
+      thread never stops: when the generator buffer is ready, it is marked as ready
+      but additional iterations are performed continuously until the dispenser buffer
+      becomes empty.</p>
+   </blockquote>
+   <p align="left"><strong>&quot;Advanced&quot; example<br>
+      </strong>NOTE: THE FEATURES USED IN HERE ARE NOT READY IN THE CURRENT RELEASE.
+         THEY'RE PRESENT ONLY FOR DOCUMENTATION AND TESTING. <strong><br> 
+         </strong><code><br> 
+         #include &lt;stdio.h&gt;<br> 
+         #include "tRNG.h"<br> 
+         <br> 
+         int main() {<br> 
+         tRNG random(0, 10, TRNG_ENABLE_UNBIASING | ENABLE_TRNG_ADDITIONAL_LOOPS);<br> 
+         for (int c=0; c&lt;1000; c++) { </code><code>printf("%08X", random.rand());
+         } <br> 
+         }</code> <br> 
+      <br> 
+      This example prints 4000 random bytes in hex format, using Unbiasing, Additional
+      Loops and Quality Control. </p>
+   <p align="left"><strong>Notes</strong><br> 
+      To free all the resources correctly, the destructor has to wait for the second
+         thread to end. Therefore the object's destruction could take some time. </p>
+   <p align="left"><strong>Linking</strong><br>
+      You need to include the supplied tRNG.h header file and link against tRNG.lib,
+         winmm.lib and the <strong>multithreaded version</strong> of your runtime
+         libraries. In MSVC++ use the /MT switch.<br>
+         The library is compiled with ICL 8.1 using /O3 /G7.</p>
+   <p align="left"><strong>Error Codes</strong></p> 
+   <table border="0" align="left"> 
+      <tr> 
+         <td>TRNG_NO_ERROR</td> 
+         <td>&nbsp;</td> 
+         <td>No error </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_SHUTDOWN</td> 
+         <td>&nbsp;</td> 
+         <td>Shutdown in progress </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_BAD_ALLOCATION</td> 
+         <td>&nbsp;</td> 
+         <td>malloc() error </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_CANT_START_GENERATOR</td> 
+         <td>&nbsp;</td> 
+         <td>_beginthread() error </td> 
+      </tr> 
+      <tr> 
+         <td> TRNG_MMSYSTEM_ERROR</td> 
+         <td>&nbsp;</td> 
+         <td>Error during recording </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_MMSYSTEM_NO_SOUNDCARD</td> 
+         <td>&nbsp;</td> 
+         <td>Can't find soundcard </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_MMSYSTEM_WRONG_FORMAT</td> 
+         <td>&nbsp;</td> 
+         <td>Recording format unsupported </td> 
+      </tr> 
+      <tr> 
+         <td>TRNG_NOT_ENOUGH_ENTROPY</td> 
+         <td>&nbsp;</td> 
+         <td>Can't collect enough entropy from the soundcard </td> 
+      </tr> 
+   </table> 
+   <p>&nbsp;</p>
+   <p>&nbsp;</p>
+   <p>&nbsp;</p>
+   <p>&nbsp;</p>
+   <p>&nbsp;</p>
+   <p align="left"><strong>Legal<br>
+   </strong>tRNG is free for non-commercial use.<br>
+   I take no responsibility for any kind of damage caused by tRNG.<br>
+   tRNG (P) 2004-2005 CAFxX. For more information visit CAFxXcrossway -&gt; <a href="http://www.cafxx.cjb.net">http://www.cafxx.cjb.net</a>.</p>
+   <p align="left"><strong>Contact</strong><br>
+      Comments? Bugs? Suggestions? Mail me at trng [AT] CAFxX [DOT] cjb [DOT] net.
+   </p>
+</div> 
+</body>
+</html>
