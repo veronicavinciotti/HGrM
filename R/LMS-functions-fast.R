@@ -1,6 +1,11 @@
 
-Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=500)
-  {
+library(tensorA)
+library(Matrix)
+# Load MASS library
+library(MASS)
+
+Gmcmc2<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=500)
+{
   B<-ncol(G)
   n.edge<-nrow(G)
   p<-(sqrt(1+8*n.edge)+1)/2
@@ -15,7 +20,7 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
   dim.cond<-ncol(cloc)
   cloc.save<-array(dim = c(B,ncol(cloc),n.iter-n.burnin))
   alpha.save<-matrix(0,nrow=B,ncol=n.iter-n.burnin)
- # log.graph.prob.save<-rep(0,n.iter-n.burnin)
+  # log.graph.prob.save<-rep(0,n.iter-n.burnin)
   
   if(!is.null(Z))
   {
@@ -24,7 +29,130 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
       beta<-as.matrix(rep(0,ncol(Z)))
     else
       beta<-as.matrix(beta)
-    beta.save<-matrix(0,nrow=ncol(Z),ncol=n.iter-n.burnin)
+      beta.save<-matrix(0,nrow=ncol(Z),ncol=n.iter-n.burnin)
+  }
+  
+  for (k in 1:n.iter){
+    y<-as.vector(G)
+    for (b in 1:B){
+      # update the latent condition locations
+      cloc_tensor <- as.tensor(cloc, c(nrow(cloc), ncol(cloc), n.edge))
+      result <- rep(cloc_tensor, times = n.edge, along = 3)
+      X = matrix(result,ncol=2) * rep(G[,b],B)
+      #X = X  * matrix(G[,b], nrow=n.edge*dim.cond, ncol=1, byrow=TRUE)
+      #X<-apply(cloc,2,rep,each=n.edge)*rep(G[,b],B)
+      #X <- matrix(cloc[rep(1:n.edge, each=dim.cond), ], nrow=n.edge*dim.cond, byrow=TRUE) * matrix(G[,b], nrow=n.edge*dim.cond, ncol=1, byrow=TRUE)
+      #X[(b-1)*n.edge+(1:n.edge),]<-matrix(apply(G,1,function(g,cloc,b){apply(cloc*g,2,sum)-cloc[b,]*g[b]},cloc=cloc,b=b),nrow=n.edge,ncol=dim.cond,byrow=T)
+      
+
+      X[(b-1)*n.edge+(1:n.edge),]<-matrix(unlist(mclapply(X = split(G, seq(nrow(G))), 
+                                                          FUN = function(g,cloc,b){colSums(cloc * g)-cloc[b,]*g[b]},cloc=cloc,b=b,
+                                                          mc.cores = 2),use.names = F),nrow=n.edge,ncol=dim.cond,byrow=T)
+      
+      hlp2<-NULL
+      
+      for (bb in 1:B){
+        if (bb==b){
+          hlp2<-c(hlp2,rep(0,n.edge))
+        } else {
+          #hlp3<-apply(G,1,function(g,cloc,bb,b){crossprod(apply(cloc*g,2,sum)-cloc[b,]*g[b]-cloc[bb,]*g[bb],cloc[bb,])},cloc=cloc,bb=bb,b=b)
+          hlp3<-unlist(mclapply(X = split(G, seq(nrow(G))), 
+                   FUN = function(g,cloc,b){crossprod(colSums(cloc * g)-cloc[b,]*g[b]-cloc[bb,]*g[bb],cloc[bb,])},cloc=cloc,b=b,
+                   mc.cores = 2),use.names = F)
+          hlp2<-c(hlp2,hlp3)
+        }
+      }
+      offset<-hlp2+rep(alpha,each=n.edge)
+      if(!is.null(Z))
+        offset<-hlp2+rep(alpha,each=n.edge)+ rep(Z%*%beta,B)
+        ####cloc[b,]<-blr(y,X,offset,theta = cloc[b,],theta_0 = rep(0,dim.cond))
+    }
+    dist.cond<-matrix(ncol=B,nrow=n.edge)
+    for (b in 1:B){
+      #updating condition-specific intercept
+     # apply(G,1,function(g,cloc,b){crossprod(apply(cloc*g,2,sum)-cloc[b,]*g[b],cloc[b,])},cloc=cloc,b=b)
+      dist.cond[,b]<-unlist(mclapply(X = split(G, seq(nrow(G))), FUN = function(g,cloc,b){crossprod(colSums(cloc * g)-cloc[b,]*g[b],cloc[b,])},cloc=cloc,b=b,
+                      mc.cores = 2),use.names = F)
+      offset<-dist.cond[,b]
+      if(!is.null(Z))
+        offset<-dist.cond[,b]+ Z%*%beta
+      y<-G[,b]
+      X<-as.matrix(rep(1,length(y)))
+      #####alpha[b]<-blr(y,X,offset,theta = alpha[b],theta_0 = 0)
+    }
+    if(!is.null(Z))
+    {
+      y<-as.vector(G)
+      X<-apply(Z,2,rep,B)
+      offset<-c(dist.cond)+rep(alpha,each=n.edge)
+      ####beta<-blr(y,X,offset,theta = beta,theta_0 = rep(0,length(beta)))
+      beta<-t(beta)
+    }
+    
+    if (k>n.burnin){
+      cloc.save[,,k-n.burnin]<-cloc
+      alpha.save[,k-n.burnin]<-alpha
+      if(!is.null(Z))
+        beta.save[,k-n.burnin]<-beta
+      # calculate graph probability
+      #    log.graph.prob<-0
+      #    for (b in 1:B){
+      #      for (i in 2:p){
+      #        for (j in 1:(i-1)){
+      #          ind<-e1==j & e2==i
+      #          if(!is.null(Z))
+      #            edge.prob<-pnorm(alpha[b]+dist.cond[ind,b]+Z[ind,]%*%beta)
+      #          else
+      #            edge.prob<-pnorm(alpha[b]+dist.cond[ind,b])
+      #          if (G[ind,b]==0){
+      #            log.graph.prob<-log.graph.prob+log(1-edge.prob)
+      #          } else {
+      #            log.graph.prob<-log.graph.prob+log(edge.prob)
+      #          }
+      #        }
+      #      }
+      #    }
+      #    log.graph.prob.save[k-n.burnin]<-log.graph.prob
+    }
+  }
+  if(is.null(Z))
+    return(list(alpha=alpha.save,cloc=cloc.save,log.graph.prob=log.graph.prob.save))
+  else
+    #    return(list(alpha=alpha.save,beta=beta.save,cloc=cloc.save,log.graph.prob=log.graph.prob.save))
+    return(list(alpha=alpha.save,beta=beta.save,cloc=cloc.save))
+}
+
+
+
+
+
+
+Gmcmc3<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=500)
+{
+  B<-ncol(G)
+  n.edge<-nrow(G)
+  p<-(sqrt(1+8*n.edge)+1)/2
+  m<-matrix(1:p,ncol=p,nrow = p)
+  e1<-t(m)[lower.tri(m)]
+  e2<-m[lower.tri(m)]
+  if(is.null(cloc))
+    cloc<-matrix(rnorm(B*2),ncol=2)
+  if(is.null(alpha))
+    alpha<-rnorm(B)
+  
+  dim.cond<-ncol(cloc)
+  cloc.save<-array(dim = c(B,ncol(cloc),n.iter-n.burnin))
+  alpha.save<-matrix(0,nrow=B,ncol=n.iter-n.burnin)
+  # log.graph.prob.save<-rep(0,n.iter-n.burnin)
+  
+  if(!is.null(Z))
+  {
+    Z<-as.matrix(Z)
+    if(is.null(beta))
+      beta<-as.matrix(rep(0,ncol(Z)))
+    else
+      beta<-as.matrix(beta)
+      beta.save<-matrix(0,nrow=ncol(Z),ncol=n.iter-n.burnin)
   }
   
   for (k in 1:n.iter){
@@ -45,7 +173,7 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
       offset<-hlp2+rep(alpha,each=n.edge)
       if(!is.null(Z))
         offset<-hlp2+rep(alpha,each=n.edge)+ rep(Z%*%beta,B)
-      cloc[b,]<-blr(y,X,offset,theta = cloc[b,],theta_0 = rep(0,dim.cond))
+        cloc[b,]<-blr(y,X,offset,theta = cloc[b,],theta_0 = rep(0,dim.cond))
     }
     dist.cond<-matrix(ncol=B,nrow=n.edge)
     for (b in 1:B){
@@ -56,14 +184,14 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
         offset<-dist.cond[,b]+ Z%*%beta
       y<-G[,b]
       X<-as.matrix(rep(1,length(y)))
-      alpha[b]<-blr(y,X,offset,theta = alpha[b],theta_0 = 0)
+      ####alpha[b]<-blr(y,X,offset,theta = alpha[b],theta_0 = 0)
     }
     if(!is.null(Z))
     {
       y<-as.vector(G)
       X<-apply(Z,2,rep,B)
       offset<-c(dist.cond)+rep(alpha,each=n.edge)
-      beta<-blr(y,X,offset,theta = beta,theta_0 = rep(0,length(beta)))
+      ####beta<-blr(y,X,offset,theta = beta,theta_0 = rep(0,length(beta)))
       beta<-t(beta)
     }
     
@@ -74,59 +202,15 @@ Gmcmc<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=5
         beta.save[,k-n.burnin]<-beta
     }
   }
+  
+  
   if(is.null(Z))
-    return(list(alpha=alpha.save,cloc=cloc.save))
+    return(list(alpha=alpha.save,cloc=cloc.save,log.graph.prob=log.graph.prob.save))
   else
-#    return(list(alpha=alpha.save,beta=beta.save,cloc=cloc.save,log.graph.prob=log.graph.prob.save))
     return(list(alpha=alpha.save,beta=beta.save,cloc=cloc.save))
 }
 
 
-blr<-function(y,X,offset = 0, theta, theta_0=0, N_sim=1){
-  # dim of theta
-  D<- ncol(X)
-  
-  # number of observations
-  n<-length(y)
-  N1<-sum(y)
-  N0<-n-N1
-  
-  # Conjugate prior on the coefficients \theta ~ N(theta_0, Q_0)
-  Q_0 <- diag(10, D)
-  
-  # Initialize parameters
-  z <- rep(NA, n)
-  
-  # Matrix storing samples of the \theta parameter
-  theta_chain <- matrix(0, nrow = N_sim, ncol = D)
-  
-  # ---------------------------------
-  # Gibbs sampling algorithm
-  # ---------------------------------
-  
-  # Compute posterior variance of theta
-  prec_0 <- solve(Q_0)
-  V <- solve(prec_0 + crossprod(X, X))
-  
-  for (t in 1:N_sim) {
-    # Update Mean of z
-    mu_z <- X %*% theta + offset
-    # Draw latent variable z from its full conditional: z | \theta, y, X
-    if(sum(1-y)>0)
-      z[y == 0] <- rtruncnorm(N0, mean = mu_z[y == 0], sd = 1, a = -Inf, b = 0)
-    if(sum(y)>0)
-      z[y == 1] <- rtruncnorm(N1, mean = mu_z[y == 1], sd = 1, a = 0, b = Inf)
-    
-    # Compute posterior mean of theta
-    M <- V %*% (prec_0 %*% theta_0 + crossprod(X,z-offset))
-    # Draw variable \theta from its full conditional: \theta | z, X
-    theta <- c(rmvnorm(1, M, V))
-    
-    # Store the \theta draws
-    theta_chain[t, ] <- theta
-  }
-  return(theta_chain)
-}
 
 ############################################
 ####COMBINED WITH BDgraph ###################
@@ -310,31 +394,55 @@ lsm.bd<-function(data,Z=NULL,initial.graphs=NULL, D=2, initial.cloc=NULL, initia
     return(list(sample.alpha=sample.alpha,sample.beta=sample.beta,sample.cloc=sample.cloc,sample.graphs=sample.graphs,pi.edgpost=pi.edgpost,pi.probit=pi.probit))
 }
 
-sample.data<-function(data,discrete.data, K, tpoints){
-  B<-length(data)
-  p<-ncol(data[[1]])
-  dat<-vector(mode="list", length=B)
-  for (i in 1:B){
-    for (j in 1:p){
-      S<-solve(K[[i]])
-      S22i<-solve(S[-j,-j])
-      S12<-S[j,-j]
-      S11<-S[j,j]
-      mu.j<-t(S12)%*%S22i%*%t(data[[i]][,-j])
-      var.j<-S11-t(S12)%*%S22i%*%as.matrix(S12)
-      data[[i]][,j]<-rtruncnorm(length(mu.j),a=tpoints[[i]][[1]][,j],b=tpoints[[i]][[2]][,j], mean=mu.j, sd=sqrt(var.j))
+
+
+blr_fast <- function(y, X, offset = 0, theta, theta_0 = c(0, 0, 0), N_sim = 1) {
+ 
+  
+  # Dimensions of theta
+  D <- ncol(X)
+  
+  # Number of observations
+  n <- length(y)
+  N1 <- sum(y)
+  N0 <- n - N1
+  
+  # Conjugate prior on the coefficients theta ~ N(theta_0, Q_0)
+  Q_0 <- diag(10, D)
+  
+  # Initialize parameters
+  z <- rep(NA, n)
+  
+  # Matrix storing samples of the theta parameter
+  theta_chain <- matrix(0, nrow = N_sim, ncol = D)
+  
+  # ---------------------------------
+  # Gibbs sampling algorithm
+  # ---------------------------------
+  
+  # Compute posterior variance of theta
+  prec_0 <- ginv(Q_0)
+  V <- ginv(prec_0 + t(X) %*% X)
+  
+  for (t in 1:N_sim) {
+    # Update Mean of z
+    mu_z <- X %*% theta + offset
+    # Draw latent variable z from its full conditional: z | theta, y, X
+    if (N0 > 0) {
+      z[y == 0] <- rtruncnorm(N0, mean = mu_z[y == 0], sd = 1, a = -Inf, b = 0)
     }
+    if (N1 > 0) {
+      z[y == 1] <- rtruncnorm(N1, mean = mu_z[y == 1], sd = 1, a = 0, b = Inf)
+    }
+    
+    # Compute posterior mean of theta
+    M <- V %*% (prec_0 %*% theta_0 + t(X) %*% (z - offset))
+    # Draw variable theta from its full conditional: theta | z, X
+    theta <- rmvnorm(1, M, V)
+    
+    # Store the theta draws
+    theta_chain[t, ] <- theta
   }
-  return(data)
-}
-
-
-rot<-function(loc){
-  x.mn<-apply(loc,2,mean)
-  alpha<-atan(x.mn[2]/x.mn[1])+(x.mn[1]<0)*pi
-  phi<-pi/2-alpha
-  angles<-apply(loc,1,function(x){atan(x[2]/x[1])+(x[1]<0)*pi})
-  r<-apply(loc,1,function(x,y){sqrt(x[1]^2+x[2]^2)/sqrt(y[1]^2+y[2]^2)},y=x.mn)
-  new.loc<-r*cbind(sin(phi+angles),cos(phi+angles))
-  return(new.loc)
+  
+  return(list(theta = theta_chain, z = z))
 }
