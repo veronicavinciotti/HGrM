@@ -1,8 +1,4 @@
 
-library(tensorA)
-library(Matrix)
-# Load MASS library
-library(MASS)
 
 Gmcmc2<-function(G, Z=NULL, n.iter=1000,alpha=NULL,beta=NULL,cloc=NULL,n.burnin=500)
 {
