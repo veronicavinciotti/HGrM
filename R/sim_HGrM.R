@@ -29,9 +29,9 @@ sim_HGrM <- function(D = 2, p = 81, B = 10, seed = 123) {
     e2 <- m[lower.tri(m)]
     Pi.true <- matrix(ncol = B, nrow = n.edge)
     for (b in 1:B) {
-      for (i in 2:p) {
-        for (j in 1:(i-1)) {
-          ind <- e1 == j & e2 == i
+      for (k in 2:p) {
+        for (j in 1:(k-1)) {
+          ind <- e1 == j & e2 == k
           Pi.true[ind, b] <- pnorm(alpha.true[b] + dist.cond[ind, b] + X[ind,] %*% beta.true)
         }
       }
@@ -40,7 +40,7 @@ sim_HGrM <- function(D = 2, p = 81, B = 10, seed = 123) {
     G.true <- G.true.new
   }
   
-  hist(Pi.true)
+ # hist(Pi.true)
   
   # Simulating data (Gaussian)
   n <- 1000
@@ -52,5 +52,5 @@ sim_HGrM <- function(D = 2, p = 81, B = 10, seed = 123) {
     data[[j]] <- BDgraph::bdgraph.sim( p = p, n = n, graph = A)$data
   }
   
-  list(data = data, cloc_true = cloc.true, alpha_true = alpha.true, beta_true = beta.true)
+  list(data = data, cloc_true = cloc.true, alpha_true = alpha.true, beta_true = beta.true,G.true=G.true)
 }
