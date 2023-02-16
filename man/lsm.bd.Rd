@@ -35,11 +35,6 @@ The function first initializes the latent positions and intercepts, and the init
 \item{pi.edgpost}{an n.edge x B matrix of the posterior edge probabilities in each network.}
 \item{pi.probit}{an n.edge x B x (iter - burnin) array of the estimated probit probabilities of the edge connections in each network.}
 }
-\references{
-Hoff, P. D. (2009). \emph{Modeling homophily and stochastic equivalence in symmetric relational data.} Journal of Computational and Graphical Statistics, 18(4), 962-980.
-
-Krivitsky, P. N., Handcock, M. S. (2014). A separable model for dynamic networks. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(1), 29-46.
-}
 \examples{
 set.seed(123)
 n <- 50
