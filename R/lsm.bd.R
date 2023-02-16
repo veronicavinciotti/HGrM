@@ -179,9 +179,9 @@ lsm.bd<-function(data,Z=NULL,initial.graphs=NULL, D=2, initial.cloc=NULL, initia
     }
   }
   if(is.null(Z))
-    return(list(sample.alpha=sample.alpha,sample.cloc=sample.cloc,sample.graphs=sample.graphs,pi.edgpost=pi.edgpost,pi.probit=pi.probit))
+    return(list(sample.alpha=sample.alpha,sample.cloc=sample.cloc,khat.edgpost=khat.edgpost,sample.graphs=sample.graphs,pi.edgpost=pi.edgpost,pi.probit=pi.probit))
   else
-    return(list(sample.alpha=sample.alpha,sample.beta=sample.beta,sample.cloc=sample.cloc,sample.graphs=sample.graphs,pi.edgpost=pi.edgpost,pi.probit=pi.probit))
+    return(list(sample.alpha=sample.alpha,sample.beta=sample.beta,khat.edgpost=khat.edgpost,sample.cloc=sample.cloc,sample.graphs=sample.graphs,pi.edgpost=pi.edgpost,pi.probit=pi.probit))
 }
 
 
