@@ -2,7 +2,7 @@
 \alias{lsm.bd}
 \title{Latent Space Model for Multiple Binary Networks}
 \description{
-  The function implements the Latent Space Model (LSM) for multiple binary networks. The LSM assumes that there exists an underlying latent space where nodes are located, and the probability of a link between two nodes is a function of their distance in this space. The model estimates the latent positions, the intercepts for each network, and the network structures for each network.
+  The function implements the Latent Space Model (LSM) for multiple binary networks. The LSM assumes that there exists an underlying latent space where nodes are located. The model estimates the latent positions, the intercepts for each network, and the network structures for each network.
 }
 \usage{
   lsm.bd(data, Z=NULL, initial.graphs=NULL, D=2, initial.cloc=NULL, initial.alpha=NULL, initial.beta=NULL, bd.iter=100,iter=1000,burnin=NULL, method = c("ggm","gcgm"), gcgm.dwpar=NULL)
@@ -37,6 +37,7 @@ The function first initializes the latent positions and intercepts, and the init
 }
 \references{
 Hoff, P. D. (2009). \emph{Modeling homophily and stochastic equivalence in symmetric relational data.} Journal of Computational and Graphical Statistics, 18(4), 962-980.
+
 Krivitsky, P. N., Handcock, M. S. (2014). A separable model for dynamic networks. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(1), 29-46.
 }
 \examples{
@@ -57,4 +58,7 @@ sample.cloc <- results$sample.cloc
 sample.graphs <- results$sample.graphs
 pi.edgpost <- results$pi.edgpost
 pi.probit <- results$pi.probit
+}
+\author{
+Veronica Vinciotti, Ernst C. Wit and Francisco Richter
 }
