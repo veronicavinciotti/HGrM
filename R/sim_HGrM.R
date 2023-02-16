@@ -18,7 +18,7 @@ sim_HGrM <- function(D = 2, p = 81, B = 10, seed = 123) {
   
   # Simulating true graph
   G.true <- matrix(0, ncol = B, nrow = n.edge)
-  for(i in 955:1000) {
+  for(i in 1:1000) {
     dist.cond <- matrix(ncol=B, nrow=n.edge)
     for (b in 1:B){
       # Updating condition-specific intercept

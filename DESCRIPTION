@@ -15,8 +15,10 @@ Depends: R (>= 3.5.0),
          tmvtnorm,
          BDgraph,
          huge,
-         Matrix
+         Matrix,
+         MASS
 LinkingTo: Rcpp
 SystemRequirements: C++14
 RoxygenNote: 7.2.1
+
 
