@@ -82,9 +82,9 @@ lsm.bd_fast<-function(data,Z=NULL,initial.graphs=NULL, D=2, initial.cloc=NULL, i
     # update latent node and condition locations
     G<-sample.graphs[,,k]
     if(is.null(Z))
-      G.loc<-Gmcmc(G,alpha=sample.alpha[,k],cloc=sample.cloc[,,k],n.iter=1,n.burnin = 0)
+      G.loc<-Gmcmc_fast(G,alpha=sample.alpha[,k],cloc=sample.cloc[,,k],n.iter=1,n.burnin = 0)
     else
-      G.loc<-Gmcmc(G,Z=Z,alpha=sample.alpha[,k],beta=sample.beta[,k],cloc=sample.cloc[,,k],n.iter=1,n.burnin = 0)
+      G.loc<-Gmcmc_fast(G,Z=Z,alpha=sample.alpha[,k],beta=sample.beta[,k],cloc=sample.cloc[,,k],n.iter=1,n.burnin = 0)
     
     
     
@@ -96,7 +96,7 @@ lsm.bd_fast<-function(data,Z=NULL,initial.graphs=NULL, D=2, initial.cloc=NULL, i
     dist.cond<-matrix(ncol=B,nrow=n.edge)
     for (b in 1:B){
       #updating condition-specific intercept
-      dist.cond[,b]<-apply(G,1,function(g,cloc,b){crossprod(apply(cloc*g,2,sum)-cloc[b,]*g[b],cloc[b,])},cloc=cloc,b=b)
+      dist.cond[,b]<-apply(G,1,function(g,cloc,b){crossprod(colSums(cloc * g)-cloc[b,]*g[b],cloc[b,])},cloc=cloc,b=b)
     }
     Pi = matrix(ncol=B,nrow=n.edge)
     for (b in 1:B){
